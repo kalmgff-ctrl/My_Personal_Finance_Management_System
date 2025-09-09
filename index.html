@@ -492,6 +492,17 @@
             margin-bottom: 0.5rem;
         }
 
+        .goal-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .goal-actions button {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         /* Debt Card */
         .debt-card {
             background: white;
@@ -1015,7 +1026,7 @@
                 <div id="goals" class="page">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                         <h2>Savings Goals</h2>
-                        <button class="btn btn-primary" onclick="showModal('addGoalModal')">
+                        <button class="btn btn-primary" onclick="resetGoalModal(); showModal('addGoalModal')">
                             <i class="fas fa-plus"></i>
                             Add Goal
                         </button>
@@ -1051,11 +1062,11 @@
                         <form id="addDebtForm">
                             <div class="form-group">
                                 <label class="form-label">Debt Name</label>
-                                <input type="text" class="form-input" required>
+                                <input type="text" class="form-input" name="name" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Type</label>
-                                <select class="form-select" required>
+                                <select class="form-select" name="type" required>
                                     <option>Loan</option>
                                     <option>Credit Card</option>
                                     <option>Mortgage</option>
@@ -1064,19 +1075,19 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Principal Amount</label>
-                                <input type="number" class="form-input" step="0.01" required>
+                                <input type="number" class="form-input" name="principal" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Interest Rate (%)</label>
-                                <input type="number" class="form-input" step="0.01" required>
+                                <input type="number" class="form-input" name="interestRate" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Monthly Payment</label>
-                                <input type="number" class="form-input" step="0.01" required>
+                                <input type="number" class="form-input" name="monthlyPayment" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Start Date</label>
-                                <input type="date" class="form-input" required>
+                                <input type="date" class="form-input" name="startDate" required>
                             </div>
                             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                                 <button type="button" class="btn btn-outline" onclick="closeModal('addDebtModal')">Cancel</button>
@@ -1302,22 +1313,22 @@
             <form id="addTransactionForm">
                 <div class="form-group">
                     <label class="form-label">Type</label>
-                    <select class="form-select" id="transactionType">
+                    <select class="form-select" id="transactionType" name="type">
                         <option value="expense">Expense</option>
                         <option value="income">Income</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Amount</label>
-                    <input type="number" class="form-input" id="transactionAmount" step="0.01" required>
+                    <input type="number" class="form-input" id="transactionAmount" name="amount" step="0.01" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
-                    <input type="text" class="form-input" id="transactionDescription" required>
+                    <input type="text" class="form-input" id="transactionDescription" name="description" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Category</label>
-                    <select class="form-select" id="transactionCategory" required>
+                    <select class="form-select" id="transactionCategory" name="category" required>
                         <option>Food & Dining</option>
                         <option>Transportation</option>
                         <option>Shopping</option>
@@ -1330,7 +1341,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Account</label>
-                    <select class="form-select" id="transactionAccount" required>
+                    <select class="form-select" id="transactionAccount" name="account" required>
                         <option>Checking Account</option>
                         <option>Savings Account</option>
                         <option>Credit Card</option>
@@ -1339,11 +1350,11 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Date</label>
-                    <input type="date" class="form-input" id="transactionDate" required>
+                    <input type="date" class="form-input" id="transactionDate" name="date" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Currency</label>
-                    <select class="form-select" id="transactionCurrency">
+                    <select class="form-select" id="transactionCurrency" name="currency">
                         <option value="USD">USD</option>
                         <option value="EUR">EUR</option>
                         <option value="GBP">GBP</option>
@@ -1362,7 +1373,44 @@
         </div>
     </div>
 
-    <!-- Other modals (Budget, Account, Goal, Bill) - similar structure, omitted for brevity but included in JS handling -->
+    <!-- Add Goal Modal -->
+    <div id="addGoalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Savings Goal</h3>
+                <button class="close-btn" onclick="closeModal('addGoalModal')">&times;</button>
+            </div>
+            <form id="addGoalForm">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label class="form-label">Goal Name</label>
+                    <input type="text" class="form-input" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Target Amount</label>
+                    <input type="number" class="form-input" name="target" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Current Amount</label>
+                    <input type="number" class="form-input" name="current" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Target Date</label>
+                    <input type="date" class="form-input" name="date">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" name="description" rows="3"></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addGoalModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Other modals like addBudgetModal, addAccountModal, addBillModal with name attributes on inputs -->
 
     <script>
         // Application State
@@ -1710,9 +1758,43 @@
                             Target Date: ${new Date(goal.date).toLocaleDateString()}
                         </div>
                     </div>
+                    <div class="goal-actions">
+                        <button class="btn btn-outline" onclick="editGoal(${goal.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteGoal(${goal.id})">Delete</button>
+                    </div>
                 `;
                 goalsList.appendChild(card);
             });
+        }
+
+        function editGoal(id) {
+            const goal = goals.find(g => g.id === id);
+            if (goal) {
+                document.querySelector('#addGoalModal .modal-title').textContent = 'Edit Savings Goal';
+                const form = document.getElementById('addGoalForm');
+                form.querySelector('[name="id"]').value = goal.id;
+                form.querySelector('[name="name"]').value = goal.name;
+                form.querySelector('[name="target"]').value = goal.target;
+                form.querySelector('[name="current"]').value = goal.current;
+                form.querySelector('[name="date"]').value = goal.date;
+                form.querySelector('[name="description"]').value = goal.description;
+                showModal('addGoalModal');
+            }
+        }
+
+        function deleteGoal(id) {
+            if (confirm('Are you sure you want to delete this goal?')) {
+                goals = goals.filter(g => g.id !== id);
+                saveData();
+                populateGoals();
+            }
+        }
+
+        function resetGoalModal() {
+            document.querySelector('#addGoalModal .modal-title').textContent = 'Add Savings Goal';
+            const form = document.getElementById('addGoalForm');
+            form.reset();
+            form.querySelector('[name="id"]').value = '';
         }
 
         function populateDebts() {
@@ -1825,9 +1907,15 @@
             closeModal('addAccountModal');
         }
 
-        function addGoal(goalData) {
-            const newGoal = { id: Date.now(), ...goalData };
-            goals.push(newGoal);
+        function addOrUpdateGoal(goalData) {
+            if (goalData.id) {
+                const index = goals.findIndex(g => g.id == goalData.id);
+                if (index > -1) {
+                    goals[index] = { ...goals[index], ...goalData };
+                }
+            } else {
+                goals.push({ id: Date.now(), ...goalData, current: goalData.current || 0 });
+            }
             saveData();
             populateGoals();
             closeModal('addGoalModal');
@@ -1874,15 +1962,30 @@
         // Form Handlers (example for transaction, others similar)
         document.getElementById('addTransactionForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const type = document.getElementById('transactionType').value;
-            const amount = document.getElementById('transactionAmount').value;
-            const description = document.getElementById('transactionDescription').value;
-            const category = document.getElementById('transactionCategory').value;
-            const account = document.getElementById('transactionAccount').value;
-            const date = document.getElementById('transactionDate').value;
-            const currency = document.getElementById('transactionCurrency').value;
+            const type = this.querySelector('[name="type"]').value;
+            const amount = this.querySelector('[name="amount"]').value;
+            const description = this.querySelector('[name="description"]').value;
+            const category = this.querySelector('[name="category"]').value;
+            const account = this.querySelector('[name="account"]').value;
+            const date = this.querySelector('[name="date"]').value;
+            const currency = this.querySelector('[name="currency"]').value;
             addTransaction({ type, amount, description, category, account, date, currency });
             this.reset();
+        });
+
+        document.getElementById('addGoalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const goalData = {
+                id: this.querySelector('[name="id"]').value,
+                name: this.querySelector('[name="name"]').value,
+                target: parseFloat(this.querySelector('[name="target"]').value),
+                current: parseFloat(this.querySelector('[name="current"]').value) || 0,
+                date: this.querySelector('[name="date"]').value,
+                description: this.querySelector('[name="description"]').value
+            };
+            addOrUpdateGoal(goalData);
+            this.reset();
+            resetGoalModal();
         });
 
         // Similar handlers for other forms...
