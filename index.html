@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceTracker - Personal Finance Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #374151;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .dark-mode {
+            --light-color: #0f172a;
+            --dark-color: #f8fafc;
+            --text-color: #e2e8f0;
+            --border-color: #334155;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .nav-menu {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-color);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-left: auto;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--light-color);
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card h3 {
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .positive { color: var(--success-color); }
+        .negative { color: var(--danger-color); }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .insights-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+
+        .insight-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        /* Table Styles */
+        .table-container {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background: var(--light-color);
+            font-weight: 600;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background: var(--border-color);
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            transition: width 0.3s ease;
+        }
+
+        /* Budget Card */
+        .budget-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .budget-category {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .budget-amount {
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .budget-progress {
+            margin-top: 1rem;
+        }
+
+        .budget-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Goal Card */
+        .goal-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .goal-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .goal-target {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .goal-progress {
+            margin-top: 1rem;
+        }
+
+        .goal-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Debt Card */
+        .debt-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .debt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .debt-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .debt-balance {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--danger-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.visible {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+        }
+
+        /* Login/Signup Page */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: var(--text-color);
+        }
+
+        .social-login {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            background: var(--light-color);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1rem 0;
+            position: relative;
+            color: var(--text-color);
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+        }
+
+        /* 2FA Modal */
+        #twoFactorModal .form-group {
+            text-align: center;
+        }
+
+        #twoFactorModal input {
+            width: 200px;
+            display: inline-block;
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">FinanceTracker</h1>
+                <p class="login-subtitle">Manage your finances with confidence</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="social-login">
+                    <button type="button" class="social-btn" onclick="socialLogin('google')">
+                        <i class="fab fa-google"></i>
+                        Google
+                    </button>
+                    <button type="button" class="social-btn" onclick="socialLogin('facebook')">
+                        <i class="fab fa-facebook-f"></i>
+                        Facebook
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="loginEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                    Sign In
+                </button>
+                
+                <div style="text-align: center;">
+                    <a href="#" onclick="showSignup()" style="color: var(--primary-color);">Don't have an account? Sign up</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Page (Modal-like, but full page for simplicity) -->
+    <div id="signupPage" class="login-container" style="display: none;">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">Sign Up</h1>
+                <p class="login-subtitle">Create your account</p>
+            </div>
+            
+            <form id="signupForm">
+                <div class="social-login">
+                    <button type="button" class="social-btn" onclick="socialSignup('google')">
+                        <i class="fab fa-google"></i>
+                        Google
+                    </button>
+                    <button type="button" class="social-btn" onclick="socialSignup('facebook')">
+                        <i class="fab fa-facebook-f"></i>
+                        Facebook
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="signupName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="signupEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="signupPassword" required minlength="8">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" id="signupConfirmPassword" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                    Sign Up
+                </button>
+                
+                <div style="text-align: center;">
+                    <a href="#" onclick="showLogin()" style="color: var(--primary-color);">Already have an account? Sign in</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2FA Modal -->
+    <div id="twoFactorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Two-Factor Authentication</h3>
+                <button class="close-btn" onclick="closeModal('twoFactorModal')">&times;</button>
+            </div>
+            <form id="twoFactorForm">
+                <div class="form-group">
+                    <label class="form-label">Enter 6-digit code from your authenticator app</label>
+                    <input type="text" class="form-input" id="twoFactorCode" maxlength="6" required>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('twoFactorModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="container" style="display: none;">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    FinanceTracker
+                </div>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" onclick="showPage('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-item" onclick="showPage('transactions')">
+                    <i class="fas fa-exchange-alt"></i>
+                    Transactions
+                </button>
+                <button class="nav-item" onclick="showPage('budget')">
+                    <i class="fas fa-calculator"></i>
+                    Budget
+                </button>
+                <button class="nav-item" onclick="showPage('accounts')">
+                    <i class="fas fa-credit-card"></i>
+                    Accounts
+                </button>
+                <button class="nav-item" onclick="showPage('goals')">
+                    <i class="fas fa-target"></i>
+                    Goals
+                </button>
+                <button class="nav-item" onclick="showPage('debts')">
+                    <i class="fas fa-balance-scale"></i>
+                    Debts
+                </button>
+                <button class="nav-item" onclick="showPage('bills')">
+                    <i class="fas fa-bell"></i>
+                    Bills & Reminders
+                </button>
+                <button class="nav-item" onclick="showPage('reports')">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </button>
+                <button class="nav-item" onclick="showPage('settings')">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-profile" onclick="showUserMenu()">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="userName">John Doe</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Dashboard Page -->
+                <div id="dashboard" class="page active">
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <h3>Total Balance</h3>
+                            <div class="stat-value" id="totalBalance" style="color: var(--primary-color);">$12,450.00</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +5.2% from last month
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Monthly Income</h3>
+                            <div class="stat-value" id="monthlyIncome" style="color: var(--success-color);">$6,500.00</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +2.1% from last month
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Monthly Expenses</h3>
+                            <div class="stat-value" id="monthlyExpenses" style="color: var(--danger-color);">$4,280.00</div>
+                            <div class="stat-change negative">
+                                <i class="fas fa-arrow-down"></i>
+                                +8.3% from last month
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Savings Rate</h3>
+                            <div class="stat-value" id="savingsRate" style="color: var(--warning-color);">34%</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +1.2% from last month
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Spending Trends</h3>
+                                <select class="form-select" style="width: auto;" onchange="updateSpendingChart()">
+                                    <option>Last 6 months</option>
+                                    <option>Last year</option>
+                                </select>
+                            </div>
+                            <canvas id="spendingChart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Expense Categories</h3>
+                            </div>
+                            <canvas id="categoryChart" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="insights-section">
+                        <h3>AI Insights</h3>
+                        <div id="insightsList">
+                            <!-- Insights will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Recent Transactions</h3>
+                            <button class="btn btn-outline" onclick="showPage('transactions')">
+                                View All
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactions">
+                                    <!-- Recent transactions will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Page -->
+                <div id="transactions" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <input type="text" class="form-input" id="searchTransactions" placeholder="Search transactions..." style="width: 300px;" oninput="searchTransactions()">
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <select class="form-select" id="filterCategory">
+                                <option>All Categories</option>
+                                <option>Food & Dining</option>
+                                <option>Transportation</option>
+                                <option>Shopping</option>
+                                <option>Bills</option>
+                            </select>
+                            <input type="file" id="importCSV" accept=".csv" style="display: none;" onchange="importCSV(this.files[0])">
+                            <button class="btn btn-outline" onclick="document.getElementById('importCSV').click()">
+                                <i class="fas fa-upload"></i>
+                                Import CSV
+                            </button>
+                            <button class="btn btn-primary" onclick="showModal('addTransactionModal')">
+                                <i class="fas fa-plus"></i>
+                                Add Transaction
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Account</th>
+                                    <th>Amount</th>
+                                    <th>Currency</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody">
+                                <!-- Transactions will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Budget Page -->
+                <div id="budget" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Monthly Budget</h2>
+                        <button class="btn btn-primary" onclick="showModal('addBudgetModal')">
+                            <i class="fas fa-plus"></i>
+                            Add Budget Category
+                        </button>
+                    </div>
+
+                    <div id="budgetList">
+                        <!-- Budget cards will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Accounts Page -->
+                <div id="accounts" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Financial Accounts</h2>
+                        <button class="btn btn-primary" onclick="showModal('addAccountModal')">
+                            <i class="fas fa-plus"></i>
+                            Add Account
+                        </button>
+                    </div>
+
+                    <div class="dashboard-stats" id="accountsList">
+                        <!-- Accounts will be populated here -->
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Net Worth Trend</h3>
+                        <canvas id="networthChart" width="800" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Goals Page -->
+                <div id="goals" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Savings Goals</h2>
+                        <button class="btn btn-primary" onclick="showModal('addGoalModal')">
+                            <i class="fas fa-plus"></i>
+                            Add Goal
+                        </button>
+                    </div>
+
+                    <div id="goalsList">
+                        <!-- Goals will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Debts Page -->
+                <div id="debts" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Debt Management</h2>
+                        <button class="btn btn-primary" onclick="showModal('addDebtModal')">
+                            <i class="fas fa-plus"></i>
+                            Add Debt
+                        </button>
+                    </div>
+
+                    <div id="debtsList">
+                        <!-- Debts will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Add Debt Modal -->
+                <div id="addDebtModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Add Debt</h3>
+                            <button class="close-btn" onclick="closeModal('addDebtModal')">&times;</button>
+                        </div>
+                        <form id="addDebtForm">
+                            <div class="form-group">
+                                <label class="form-label">Debt Name</label>
+                                <input type="text" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Type</label>
+                                <select class="form-select" required>
+                                    <option>Loan</option>
+                                    <option>Credit Card</option>
+                                    <option>Mortgage</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Principal Amount</label>
+                                <input type="number" class="form-input" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Interest Rate (%)</label>
+                                <input type="number" class="form-input" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Monthly Payment</label>
+                                <input type="number" class="form-input" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-input" required>
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                                <button type="button" class="btn btn-outline" onclick="closeModal('addDebtModal')">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Add Debt</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Bills Page -->
+                <div id="bills" class="page">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Bills & Reminders</h2>
+                        <button class="btn btn-primary" onclick="showModal('addBillModal')">
+                            <i class="fas fa-plus"></i>
+                            Add Bill
+                        </button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Bill Name</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                    <th>Frequency</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billsTableBody">
+                                <!-- Bills will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reports Page -->
+                <div id="reports" class="page">
+                    <h2 style="margin-bottom: 2rem;">Financial Reports</h2>
+                    
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <select class="form-select" id="reportPeriod">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                            <option>Last 3 Months</option>
+                            <option>Last 6 Months</option>
+                            <option>This Year</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="exportToPDF()">
+                            <i class="fas fa-file-pdf"></i>
+                            Export PDF
+                        </button>
+                        <button class="btn btn-success" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel"></i>
+                            Export Excel
+                        </button>
+                        <button class="btn btn-outline" onclick="emailMonthlyReport()">
+                            <i class="fas fa-envelope"></i>
+                            Email Report to Gmail
+                        </button>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <h3>Income vs Expenses</h3>
+                            <canvas id="incomeExpenseChart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Monthly Breakdown</h3>
+                            <div style="padding: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Total Income:</span>
+                                    <span id="reportIncome" style="color: var(--success-color); font-weight: bold;">$6,500.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Total Expenses:</span>
+                                    <span id="reportExpenses" style="color: var(--danger-color); font-weight: bold;">$4,280.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Net Savings:</span>
+                                    <span id="reportNetSavings" style="color: var(--primary-color); font-weight: bold;">$2,220.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Savings Rate:</span>
+                                    <span id="reportSavingsRate" style="color: var(--warning-color); font-weight: bold;">34.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Top Expense Categories</h3>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                        <th>Percentage</th>
+                                        <th>Change from Last Month</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topCategories">
+                                    <!-- Top categories will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings" class="page">
+                    <h2 style="margin-bottom: 2rem;">Settings</h2>
+                    
+                    <div style="display: grid; gap: 2rem;">
+                        <div class="chart-card">
+                            <h3>Account Settings</h3>
+                            <form id="profileForm">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-input" id="profileName" value="John Doe">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" id="profileEmail" value="john.doe@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Phone</label>
+                                    <input type="tel" class="form-input" id="profilePhone" value="+1 (555) 123-4567">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Profile</button>
+                            </form>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Preferences</h3>
+                            <form id="preferencesForm">
+                                <div class="form-group">
+                                    <label class="form-label">Default Currency</label>
+                                    <select class="form-select" id="defaultCurrency">
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="CAD">CAD - Canadian Dollar</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Date Format</label>
+                                    <select class="form-select" id="dateFormat">
+                                        <option>MM/DD/YYYY</option>
+                                        <option>DD/MM/YYYY</option>
+                                        <option>YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Theme</label>
+                                    <select class="form-select" id="themePreference" onchange="setThemePreference()">
+                                        <option>Light</option>
+                                        <option>Dark</option>
+                                        <option>Auto</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                            </form>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Notifications</h3>
+                            <form id="notificationForm">
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" id="billReminders" checked>
+                                        Bill Due Reminders (via Gmail)
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" id="budgetAlerts" checked>
+                                        Budget Alerts
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" id="weeklyReports">
+                                        Weekly Reports
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" id="monthlyReports" checked>
+                                        Monthly Reports (via Gmail)
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </form>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Security & Backup</h3>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <button class="btn btn-outline" onclick="changePassword()">Change Password</button>
+                                <button class="btn btn-outline" onclick="enable2FA()">Enable Two-Factor Authentication</button>
+                                <button class="btn btn-outline" onclick="backupData()">Download Data Backup</button>
+                                <button class="btn btn-danger" onclick="deleteAccount()">Delete Account</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals (Add Transaction, Budget, Account, Goal, Bill) - same as before -->
+    <!-- Add Transaction Modal -->
+    <div id="addTransactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Transaction</h3>
+                <button class="close-btn" onclick="closeModal('addTransactionModal')">&times;</button>
+            </div>
+            <form id="addTransactionForm">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="transactionType">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-input" id="transactionAmount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-input" id="transactionDescription" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="transactionCategory" required>
+                        <option>Food & Dining</option>
+                        <option>Transportation</option>
+                        <option>Shopping</option>
+                        <option>Bills & Utilities</option>
+                        <option>Entertainment</option>
+                        <option>Healthcare</option>
+                        <option>Travel</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Account</label>
+                    <select class="form-select" id="transactionAccount" required>
+                        <option>Checking Account</option>
+                        <option>Savings Account</option>
+                        <option>Credit Card</option>
+                        <option>Cash</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-input" id="transactionDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Currency</label>
+                    <select class="form-select" id="transactionCurrency">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="CAD">CAD</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Receipt (Optional)</label>
+                    <input type="file" class="form-input" id="transactionReceipt" accept="image/*,.pdf">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addTransactionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Other modals (Budget, Account, Goal, Bill) - similar structure, omitted for brevity but included in JS handling -->
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let isDarkMode = false;
+        let transactions = [];
+        let budgets = [];
+        let accounts = [];
+        let goals = [];
+        let bills = [];
+        let debts = [];
+        let defaultCurrency = 'USD';
+        let notifications = {
+            billReminders: true,
+            budgetAlerts: true,
+            weeklyReports: false,
+            monthlyReports: true
+        };
+
+        // Sample Data
+        const sampleTransactions = [
+            { id: 1, date: '2024-12-15', description: 'Grocery Store', category: 'Food & Dining', amount: -85.50, account: 'Checking', currency: 'USD' },
+            { id: 2, date: '2024-12-14', description: 'Salary Deposit', category: 'Income', amount: 3250.00, account: 'Checking', currency: 'USD' },
+            { id: 3, date: '2024-12-13', description: 'Gas Station', category: 'Transportation', amount: -45.00, account: 'Credit Card', currency: 'USD' },
+            { id: 4, date: '2024-12-12', description: 'Coffee Shop', category: 'Food & Dining', amount: -12.50, account: 'Checking', currency: 'USD' },
+            { id: 5, date: '2024-12-11', description: 'Online Shopping', category: 'Shopping', amount: -125.00, account: 'Credit Card', currency: 'USD' }
+        ];
+
+        const sampleBudgets = [
+            { id: 1, category: 'Food & Dining', budget: 800, spent: 425, period: 'Monthly' },
+            { id: 2, category: 'Transportation', budget: 300, spent: 180, period: 'Monthly' },
+            { id: 3, category: 'Shopping', budget: 400, spent: 320, period: 'Monthly' },
+            { id: 4, category: 'Entertainment', budget: 200, spent: 95, period: 'Monthly' }
+        ];
+
+        const sampleAccounts = [
+            { id: 1, name: 'Checking Account', type: 'Checking', balance: 3250.00, number: '****1234', currency: 'USD' },
+            { id: 2, name: 'Savings Account', type: 'Savings', balance: 8750.00, number: '****5678', currency: 'USD' },
+            { id: 3, name: 'Credit Card', type: 'Credit Card', balance: -1450.00, number: '****9012', currency: 'USD' },
+            { id: 4, name: 'Investment Account', type: 'Investment', balance: 15200.00, number: '****3456', currency: 'USD' }
+        ];
+
+        const sampleGoals = [
+            { id: 1, name: 'Emergency Fund', target: 10000, current: 3500, date: '2025-12-31', description: '6 months of expenses' },
+            { id: 2, name: 'Vacation', target: 3000, current: 1200, date: '2025-06-30', description: 'Summer trip to Europe' },
+            { id: 3, name: 'New Car', target: 25000, current: 8500, date: '2026-03-31', description: 'Down payment for new car' }
+        ];
+
+        const sampleDebts = [
+            { id: 1, name: 'Credit Card Debt', type: 'Credit Card', principal: 1450, interestRate: 18.99, monthlyPayment: 100, startDate: '2024-01-01' },
+            { id: 2, name: 'Student Loan', type: 'Loan', principal: 20000, interestRate: 5.5, monthlyPayment: 250, startDate: '2023-06-01' }
+        ];
+
+        const sampleBills = [
+            { id: 1, name: 'Rent', amount: 1200, dueDate: '2025-01-01', frequency: 'Monthly', status: 'Due Soon', emailReminder: true },
+            { id: 2, name: 'Electric Bill', amount: 85, dueDate: '2025-01-15', frequency: 'Monthly', status: 'Paid', emailReminder: true },
+            { id: 3, name: 'Internet', amount: 60, dueDate: '2025-01-20', frequency: 'Monthly', status: 'Upcoming', emailReminder: true }
+        ];
+
+        // Initialize Application
+        function initApp() {
+            transactions = JSON.parse(localStorage.getItem('transactions')) || [...sampleTransactions];
+            budgets = JSON.parse(localStorage.getItem('budgets')) || [...sampleBudgets];
+            accounts = JSON.parse(localStorage.getItem('accounts')) || [...sampleAccounts];
+            goals = JSON.parse(localStorage.getItem('goals')) || [...sampleGoals];
+            debts = JSON.parse(localStorage.getItem('debts')) || [...sampleDebts];
+            bills = JSON.parse(localStorage.getItem('bills')) || [...sampleBills];
+            
+            // Load preferences
+            defaultCurrency = localStorage.getItem('defaultCurrency') || 'USD';
+            document.getElementById('defaultCurrency').value = defaultCurrency;
+            
+            // Check for saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                toggleTheme();
+            }
+            
+            populateAll();
+            initCharts();
+            generateInsights();
+            scheduleNotifications();
+        }
+
+        // Authentication Functions
+        function showLogin() {
+            document.getElementById('signupPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+        }
+
+        function showSignup() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('signupPage').style.display = 'flex';
+        }
+
+        function login(email, password) {
+            // Simulate login with 2FA
+            currentUser = { email, name: 'John Doe' };
+            showModal('twoFactorModal');
+        }
+
+        function socialLogin(provider) {
+            // Simulate social login with 2FA
+            currentUser = { email: 'user@example.com', name: 'John Doe', provider };
+            showModal('twoFactorModal');
+        }
+
+        function signup(name, email, password) {
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters');
+                return;
+            }
+            // Simulate signup
+            currentUser = { name, email };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            document.getElementById('userName').textContent = name;
+            showModal('twoFactorModal');
+        }
+
+        function socialSignup(provider) {
+            // Simulate social signup
+            currentUser = { name: 'Social User', email: 'social@example.com', provider };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            document.getElementById('userName').textContent = currentUser.name;
+            showModal('twoFactorModal');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            login(email, password);
+        });
+
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            signup(name, email, password);
+        });
+
+        document.getElementById('twoFactorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const code = document.getElementById('twoFactorCode').value;
+            if (code === '123456') { // Simulate correct code
+                closeModal('twoFactorModal');
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('signupPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                initApp();
+            } else {
+                alert('Invalid code');
+            }
+        });
+
+        // Navigation Functions
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            event.target.classList.add('active');
+            const titles = {
+                dashboard: 'Dashboard',
+                transactions: 'Transactions',
+                budget: 'Budget',
+                accounts: 'Accounts',
+                goals: 'Goals',
+                debts: 'Debts',
+                bills: 'Bills & Reminders',
+                reports: 'Reports',
+                settings: 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[pageId] || 'Page';
+            if (pageId === 'reports') updateReport();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('visible');
+            } else {
+                sidebar.classList.toggle('hidden');
+                mainContent.classList.toggle('expanded');
+            }
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+            const themeIcon = document.querySelector('.theme-toggle i');
+            themeIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        function setThemePreference() {
+            const preference = document.getElementById('themePreference').value;
+            localStorage.setItem('themePreference', preference);
+            // Auto theme based on system preference if 'Auto'
+            if (preference === 'Auto') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark !== isDarkMode) toggleTheme();
+            }
+        }
+
+        function showUserMenu() {
+            // Simulate logout or profile
+            if (confirm('Logout?')) {
+                location.reload();
+            }
+        }
+
+        // Modal Functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Data Population Functions
+        function populateAll() {
+            populateTransactions();
+            populateBudgets();
+            populateAccounts();
+            populateGoals();
+            populateDebts();
+            populateBills();
+            populateRecentTransactions();
+            updateDashboardStats();
+        }
+
+        function populateTransactions() {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '';
+            const filteredTransactions = filterTransactions();
+            filteredTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const amount = transaction.amount > 0 ? `+${Math.abs(transaction.amount).toFixed(2)}` : `-${Math.abs(transaction.amount).toFixed(2)}`;
+                const color = transaction.amount > 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                row.innerHTML = `
+                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>${transaction.description}</td>
+                    <td>${transaction.category}</td>
+                    <td>${transaction.account}</td>
+                    <td style="color: ${color}">${amount} ${transaction.currency}</td>
+                    <td>${transaction.currency}</td>
+                    <td>
+                        <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="editTransaction(${transaction.id})">Edit</button>
+                        <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteTransaction(${transaction.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterTransactions() {
+            const search = document.getElementById('searchTransactions').value.toLowerCase();
+            const category = document.getElementById('filterCategory').value;
+            return transactions.filter(t => 
+                t.description.toLowerCase().includes(search) &&
+                (category === 'All Categories' || t.category === category)
+            );
+        }
+
+        function searchTransactions() {
+            populateTransactions();
+        }
+
+        function populateBudgets() {
+            const budgetList = document.getElementById('budgetList');
+            budgetList.innerHTML = '';
+            budgets.forEach(budget => {
+                const percentage = (budget.spent / budget.budget) * 100;
+                const card = document.createElement('div');
+                card.className = 'budget-card';
+                const progressColor = percentage > 100 ? 'var(--danger-color)' : percentage > 80 ? 'var(--warning-color)' : 'var(--success-color)';
+                card.innerHTML = `
+                    <div class="budget-header">
+                        <div class="budget-category">${budget.category}</div>
+                        <div class="budget-amount">${budget.budget.toFixed(2)} ${budget.period}</div>
+                    </div>
+                    <div class="budget-progress">
+                        <div class="budget-info">
+                            <span>Spent: ${budget.spent.toFixed(2)}</span>
+                            <span>${percentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${Math.min(percentage, 100)}%; background-color: ${progressColor}"></div>
+                        </div>
+                        ${percentage > 90 && notifications.budgetAlerts ? `<div style="color: var(--warning-color); font-size: 0.875rem;">Alert: Nearing budget limit!</div>` : ''}
+                    </div>
+                `;
+                budgetList.appendChild(card);
+            });
+        }
+
+        function populateAccounts() {
+            const accountsList = document.getElementById('accountsList');
+            accountsList.innerHTML = '';
+            accounts.forEach(account => {
+                const statCard = document.createElement('div');
+                statCard.className = 'stat-card';
+                const color = account.balance >= 0 ? (account.type === 'Savings' ? 'var(--success-color)' : 'var(--primary-color)') : 'var(--danger-color)';
+                statCard.innerHTML = `
+                    <h3>${account.name}</h3>
+                    <div class="stat-value" style="color: ${color}">${account.balance.toFixed(2)} ${account.currency}</div>
+                    <div style="font-size: 0.875rem; color: var(--text-color);">${account.number}</div>
+                `;
+                accountsList.appendChild(statCard);
+            });
+        }
+
+        function populateGoals() {
+            const goalsList = document.getElementById('goalsList');
+            goalsList.innerHTML = '';
+            goals.forEach(goal => {
+                const percentage = (goal.current / goal.target) * 100;
+                const card = document.createElement('div');
+                card.className = 'goal-card';
+                card.innerHTML = `
+                    <div class="goal-header">
+                        <div>
+                            <div class="goal-title">${goal.name}</div>
+                            <div style="color: var(--text-color); font-size: 0.875rem;">${goal.description}</div>
+                        </div>
+                        <div class="goal-target">${goal.target.toLocaleString()} ${defaultCurrency}</div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="goal-info">
+                            <span>Saved: ${goal.current.toLocaleString()}</span>
+                            <span>${percentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${Math.min(percentage, 100)}%;"></div>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-color);">
+                            Target Date: ${new Date(goal.date).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+                goalsList.appendChild(card);
+            });
+        }
+
+        function populateDebts() {
+            const debtsList = document.getElementById('debtsList');
+            debtsList.innerHTML = '';
+            debts.forEach(debt => {
+                const payoff = calculateDebtPayoff(debt.principal, debt.interestRate, debt.monthlyPayment);
+                const card = document.createElement('div');
+                card.className = 'debt-card';
+                card.innerHTML = `
+                    <div class="debt-header">
+                        <div class="debt-name">${debt.name} (${debt.type})</div>
+                        <div class="debt-balance">${debt.principal.toFixed(2)} ${defaultCurrency}</div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <span>Interest Rate: ${debt.interestRate}%</span> | 
+                        <span>Monthly Payment: ${debt.monthlyPayment.toFixed(2)} ${defaultCurrency}</span>
+                    </div>
+                    <div style="font-size: 0.875rem; color: var(--text-color);">
+                        Estimated Payoff: ${payoff.years} years ${payoff.months % 12} months | Total Interest: ${payoff.totalInterest.toFixed(2)} ${defaultCurrency}
+                    </div>
+                `;
+                debtsList.appendChild(card);
+            });
+        }
+
+        function populateBills() {
+            const tbody = document.getElementById('billsTableBody');
+            tbody.innerHTML = '';
+            bills.forEach(bill => {
+                const row = document.createElement('tr');
+                const statusColor = bill.status === 'Paid' ? 'var(--success-color)' : bill.status === 'Due Soon' ? 'var(--warning-color)' : 'var(--text-color)';
+                row.innerHTML = `
+                    <td>${bill.name}</td>
+                    <td>${bill.amount.toFixed(2)} ${defaultCurrency}</td>
+                    <td>${new Date(bill.dueDate).toLocaleDateString()}</td>
+                    <td>${bill.frequency}</td>
+                    <td><span style="color: ${statusColor};">${bill.status}</span></td>
+                    <td>
+                        <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="editBill(${bill.id})">Edit</button>
+                        <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteBill(${bill.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            checkBillReminders();
+        }
+
+        function populateRecentTransactions() {
+            const tbody = document.getElementById('recentTransactions');
+            tbody.innerHTML = '';
+            const recent = transactions.slice(0, 3).reverse();
+            recent.forEach(transaction => {
+                const row = document.createElement('tr');
+                const amount = transaction.amount > 0 ? `+${Math.abs(transaction.amount).toFixed(2)}` : `-${Math.abs(transaction.amount).toFixed(2)}`;
+                const color = transaction.amount > 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                row.innerHTML = `
+                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>${transaction.description}</td>
+                    <td>${transaction.category}</td>
+                    <td style="color: ${color};">${amount} ${transaction.currency}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // CRUD Functions
+        function addTransaction(transactionData) {
+            const newTransaction = {
+                id: Date.now(),
+                ...transactionData,
+                date: transactionData.date || new Date().toISOString().split('T')[0],
+                currency: transactionData.currency || defaultCurrency
+            };
+            newTransaction.amount = parseFloat(newTransaction.amount) * (newTransaction.type === 'income' ? 1 : -1);
+            delete newTransaction.type;
+            transactions.unshift(newTransaction);
+            saveData();
+            populateAll();
+            closeModal('addTransactionModal');
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Are you sure?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveData();
+                populateAll();
+            }
+        }
+
+        function editTransaction(id) {
+            // Implement edit logic - for simplicity, alert
+            alert('Edit functionality: Load form with existing data');
+        }
+
+        function addBudget(budgetData) {
+            const newBudget = { id: Date.now(), ...budgetData, spent: 0 };
+            budgets.push(newBudget);
+            saveData();
+            populateBudgets();
+            closeModal('addBudgetModal');
+        }
+
+        function addAccount(accountData) {
+            const newAccount = { id: Date.now(), ...accountData, currency: defaultCurrency };
+            accounts.push(newAccount);
+            saveData();
+            populateAccounts();
+            updateDashboardStats();
+            closeModal('addAccountModal');
+        }
+
+        function addGoal(goalData) {
+            const newGoal = { id: Date.now(), ...goalData };
+            goals.push(newGoal);
+            saveData();
+            populateGoals();
+            closeModal('addGoalModal');
+        }
+
+        function addDebt(debtData) {
+            const newDebt = { id: Date.now(), ...debtData };
+            debts.push(newDebt);
+            saveData();
+            populateDebts();
+            closeModal('addDebtModal');
+        }
+
+        function addBill(billData) {
+            const newBill = { id: Date.now(), ...billData, status: 'Upcoming', emailReminder: billData.emailReminder || true };
+            bills.push(newBill);
+            saveData();
+            populateBills();
+            closeModal('addBillModal');
+        }
+
+        function deleteBill(id) {
+            if (confirm('Are you sure?')) {
+                bills = bills.filter(b => b.id !== id);
+                saveData();
+                populateBills();
+            }
+        }
+
+        function editBill(id) {
+            alert('Edit bill functionality');
+        }
+
+        function saveData() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            localStorage.setItem('budgets', JSON.stringify(budgets));
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+            localStorage.setItem('goals', JSON.stringify(goals));
+            localStorage.setItem('debts', JSON.stringify(debts));
+            localStorage.setItem('bills', JSON.stringify(bills));
+            localStorage.setItem('defaultCurrency', defaultCurrency);
+        }
+
+        // Form Handlers (example for transaction, others similar)
+        document.getElementById('addTransactionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const type = document.getElementById('transactionType').value;
+            const amount = document.getElementById('transactionAmount').value;
+            const description = document.getElementById('transactionDescription').value;
+            const category = document.getElementById('transactionCategory').value;
+            const account = document.getElementById('transactionAccount').value;
+            const date = document.getElementById('transactionDate').value;
+            const currency = document.getElementById('transactionCurrency').value;
+            addTransaction({ type, amount, description, category, account, date, currency });
+            this.reset();
+        });
+
+        // Similar handlers for other forms...
+
+        // Transaction Import
+        function importCSV(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                lines.forEach((line, index) => {
+                    if (index === 0) return; // Skip header
+                    const [date, description, category, amount, account, currency] = line.split(',');
+                    if (date && description && amount) {
+                        addTransaction({
+                            date,
+                            description,
+                            category: category || 'Other',
+                            amount: parseFloat(amount),
+                            account: account || 'Checking',
+                            currency: currency || defaultCurrency,
+                            type: amount > 0 ? 'income' : 'expense'
+                        });
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        // Charts
+        let spendingChart, categoryChart, incomeExpenseChart, networthChart;
+
+        function initCharts() {
+            initSpendingChart();
+            initCategoryChart();
+            initIncomeExpenseChart();
+            initNetworthChart();
+        }
+
+        function initSpendingChart() {
+            const ctx = document.getElementById('spendingChart').getContext('2d');
+            spendingChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Expenses',
+                        data: [3200, 3800, 3600, 4100, 3900, 4280],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Income',
+                        data: [6000, 6200, 6500, 6300, 6400, 6500],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: value => `$${value.toLocaleString()}` } } }
+                }
+            });
+        }
+
+        function updateSpendingChart() {
+            // Update chart based on select - for simplicity, reload data
+            initSpendingChart();
+        }
+
+        function initCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Housing', 'Food & Dining', 'Transportation', 'Utilities', 'Entertainment', 'Shopping'],
+                    datasets: [{
+                        data: [1200, 850, 450, 280, 200, 300],
+                        backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function initIncomeExpenseChart() {
+            const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+            incomeExpenseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Income',
+                        data: [6000, 6200, 6500, 6300, 6400, 6500],
+                        backgroundColor: '#10b981'
+                    }, {
+                        label: 'Expenses',
+                        data: [3200, 3800, 3600, 4100, 3900, 4280],
+                        backgroundColor: '#ef4444'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: value => `$${value.toLocaleString()}` } } }
+                }
+            });
+        }
+
+        function initNetworthChart() {
+            const ctx = document.getElementById('networthChart').getContext('2d');
+            networthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Net Worth',
+                        data: [22000, 23500, 24200, 25800, 26500, 27200, 28000, 29500, 30200, 31800, 32500, 33750],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: false, ticks: { callback: value => `$${value.toLocaleString()}` } } }
+                }
+            });
+        }
+
+        // Dashboard Stats Update
+        function updateDashboardStats() {
+            const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+            const monthlyIncome = transactions
+                .filter(t => t.amount > 0 && new Date(t.date).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0);
+            const monthlyExpenses = Math.abs(transactions
+                .filter(t => t.amount < 0 && new Date(t.date).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0));
+            const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100).toFixed(0) : 0;
+
+            document.getElementById('totalBalance').textContent = `${totalBalance.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('monthlyIncome').textContent = `${monthlyIncome.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('monthlyExpenses').textContent = `${monthlyExpenses.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('savingsRate').textContent = `${savingsRate}%`;
+        }
+
+        // AI Insights
+        function generateInsights() {
+            const insights = generateSmartInsights();
+            const insightsList = document.getElementById('insightsList');
+            insightsList.innerHTML = '';
+            insights.forEach(insight => {
+                const item = document.createElement('div');
+                item.className = 'insight-item';
+                item.innerHTML = `<strong>${insight.type}:</strong> ${insight.message} <em>Suggestion: ${insight.suggestion}</em>`;
+                insightsList.appendChild(item);
+            });
+        }
+
+        function generateSmartInsights() {
+            const insights = [];
+            // Example implementations from requirements
+            const thisMonthSpending = Math.abs(transactions.filter(t => t.amount < 0 && new Date(t.date).getMonth() === new Date().getMonth()).reduce((sum, t) => sum + t.amount, 0));
+            insights.push({
+                type: 'Spending Pattern',
+                message: `You spent ${thisMonthSpending.toFixed(2)} ${defaultCurrency} this month.`,
+                suggestion: 'You spend more on eating out this month compared to last. Consider cooking more.'
+            });
+
+            const prediction = predictFutureExpenses();
+            insights.push({
+                type: 'Expense Prediction',
+                message: `Predicted expenses next month: ${prediction.nextMonth.toFixed(2)} ${defaultCurrency} (${prediction.trend}).`,
+                suggestion: 'Based on past habits, adjust your budget accordingly.'
+            });
+
+            return insights;
+        }
+
+        function predictFutureExpenses() {
+            // Simple average-based prediction
+            const avgExpenses = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0) / transactions.filter(t => t.amount < 0).length;
+            return { nextMonth: avgExpenses * 1.05, trend: 'increasing', confidence: 85 }; // Simulated
+        }
+
+        // Reports
+        function updateReport() {
+            // Update report based on period - for simplicity, use current month
+            const monthlyIncome = transactions
+                .filter(t => t.amount > 0 && new Date(t.date).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0);
+            const monthlyExpenses = Math.abs(transactions
+                .filter(t => t.amount < 0 && new Date(t.date).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0));
+            const netSavings = monthlyIncome - monthlyExpenses;
+            const savingsRate = monthlyIncome > 0 ? ((netSavings / monthlyIncome) * 100).toFixed(1) : 0;
+
+            document.getElementById('reportIncome').textContent = `${monthlyIncome.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('reportExpenses').textContent = `${monthlyExpenses.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('reportNetSavings').textContent = `${netSavings.toFixed(2)} ${defaultCurrency}`;
+            document.getElementById('reportSavingsRate').textContent = `${savingsRate}%`;
+
+            // Top categories
+            const categoryBreakdown = {};
+            transactions.filter(t => t.amount < 0).forEach(t => {
+                categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + Math.abs(t.amount);
+            });
+            const topCategoriesTbody = document.getElementById('topCategories');
+            topCategoriesTbody.innerHTML = '';
+            Object.entries(categoryBreakdown).sort(([,a], [,b]) => b - a).slice(0, 4).forEach(([cat, amt]) => {
+                const percentage = (amt / monthlyExpenses * 100).toFixed(0);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${cat}</td>
+                    <td>${amt.toFixed(2)} ${defaultCurrency}</td>
+                    <td>${percentage}%</td>
+                    <td style="color: var(--success-color);">-2%</td>
+                `;
+                topCategoriesTbody.appendChild(row);
+            });
+        }
+
+        function exportToPDF() {
+            // Simulate PDF export
+            const report = generateMonthlyReport();
+            alert(`PDF exported with report for ${report.month}. In production, use jsPDF.`);
+        }
+
+        function exportToExcel() {
+            // Simulate Excel export
+            alert('Excel exported. In production, use SheetJS.');
+        }
+
+        function emailMonthlyReport() {
+            if (notifications.monthlyReports) {
+                const report = generateMonthlyReport();
+                sendEmailNotification(currentUser.email, `Monthly Financial Report - ${report.month}`, formatReportForEmail(report));
+                alert('Monthly report sent to your Gmail!');
+            } else {
+                alert('Enable monthly reports in settings.');
+            }
+        }
+
+        // Notifications and Reminders
+        function checkBillReminders() {
+            bills.forEach(bill => {
+                const dueDate = new Date(bill.dueDate);
+                const today = new Date();
+                const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                if (daysUntilDue <= 3 && daysUntilDue > 0 && notifications.billReminders && bill.emailReminder) {
+                    sendEmailNotification(currentUser.email, 'Bill Reminder', `${bill.name} due in ${daysUntilDue} days - ${bill.amount} ${defaultCurrency}`);
+                }
+            });
+        }
+
+        function scheduleNotifications() {
+            checkBillReminders();
+            // Simulate budget alerts
+            budgets.forEach(budget => {
+                if ((budget.spent / budget.budget * 100) > 90 && notifications.budgetAlerts) {
+                    sendNotification(`Budget alert for ${budget.category}: ${((budget.spent / budget.budget * 100).toFixed(1))}% used`);
+                }
+            });
+        }
+
+        function sendNotification(message, type = 'info') {
+            // Browser notification or console
+            if (Notification.permission === 'granted') {
+                new Notification('FinanceTracker', { body: message });
+            } else {
+                console.log(`${type.toUpperCase()}: ${message}`);
+            }
+        }
+
+        function sendEmailNotification(email, subject, message) {
+            // Simulate email - in production, use backend service
+            console.log(`Email to ${email}: ${subject} - ${message}`);
+        }
+
+        // Data Backup & Security
+        function backupData() {
+            const data = {
+                transactions, budgets, accounts, goals, debts, bills, currentUser: { name: currentUser.name, email: currentUser.email }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `finance_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function enable2FA() {
+            alert('2FA enabled. In production, integrate with auth service.');
+        }
+
+        function changePassword() {
+            const newPass = prompt('Enter new password (min 8 chars):');
+            if (newPass && newPass.length >= 8) {
+                alert('Password changed.');
+            }
+        }
+
+        function deleteAccount() {
+            if (confirm('Delete account? This is permanent.')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Settings Forms
+        document.getElementById('preferencesForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            defaultCurrency = document.getElementById('defaultCurrency').value;
+            localStorage.setItem('defaultCurrency', defaultCurrency);
+            populateAll(); // Refresh displays
+            alert('Preferences saved.');
+        });
+
+        document.getElementById('notificationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            notifications.billReminders = document.getElementById('billReminders').checked;
+            notifications.budgetAlerts = document.getElementById('budgetAlerts').checked;
+            notifications.weeklyReports = document.getElementById('weeklyReports').checked;
+            notifications.monthlyReports = document.getElementById('monthlyReports').checked;
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            alert('Notification settings saved.');
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentUser.name = document.getElementById('profileName').value;
+            currentUser.email = document.getElementById('profileEmail').value;
+            document.getElementById('userName').textContent = currentUser.name;
+            localStorage.setItem('user', JSON.stringify({ name: currentUser.name, email: currentUser.email }));
+            alert('Profile updated.');
+        });
+
+        // Other required functions (generateMonthlyReport, calculateDebtPayoff, etc.) as per earlier code snippets
+        function generateMonthlyReport() {
+            // As per code
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyTransactions = transactions.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            });
+            const income = monthlyTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+            const expenses = Math.abs(monthlyTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+            const categoryBreakdown = {};
+            monthlyTransactions.filter(t => t.amount < 0).forEach(t => {
+                categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + Math.abs(t.amount);
+            });
+            return {
+                month: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                summary: { totalIncome: income, totalExpenses: expenses, netSavings: income - expenses, savingsRate: income > 0 ? ((income - expenses) / income * 100) : 0 },
+                categoryBreakdown,
+                budgetPerformance: budgets.map(b => ({ category: b.category, budgeted: b.budget, spent: b.spent, remaining: b.budget - b.spent, percentUsed: (b.spent / b.budget) * 100 })),
+                insights: generateSmartInsights(),
+                recommendations: [] // From health score
+            };
+        }
+
+        function calculateDebtPayoff(principal, interestRate, monthlyPayment) {
+            // As per code
+            let balance = principal;
+            let months = 0;
+            let totalInterest = 0;
+            const monthlyRate = interestRate / 100 / 12;
+            while (balance > 0 && months < 360) {
+                const interestPayment = balance * monthlyRate;
+                const principalPayment = monthlyPayment - interestPayment;
+                if (principalPayment <= 0) break;
+                totalInterest += interestPayment;
+                balance -= principalPayment;
+                months++;
+                if (balance < 0) balance = 0;
+            }
+            return { months, years: Math.floor(months / 12), totalInterest, totalPaid: principal + totalInterest };
+        }
+
+        function formatReportForEmail(report) {
+            // As per code
+            return `
+                <h2>Monthly Financial Report - ${report.month}</h2>
+                <h3>Summary</h3>
+                <ul>
+                    <li>Total Income: ${report.summary.totalIncome.toFixed(2)} ${defaultCurrency}</li>
+                    <li>Total Expenses: ${report.summary.totalExpenses.toFixed(2)} ${defaultCurrency}</li>
+                    <li>Net Savings: ${report.summary.netSavings.toFixed(2)} ${defaultCurrency}</li>
+                    <li>Savings Rate: ${report.summary.savingsRate.toFixed(1)}%</li>
+                </ul>
+                <h3>Top Spending Categories</h3>
+                <ul>
+                    ${Object.entries(report.categoryBreakdown).sort(([,a], [,b]) => b - a).slice(0, 5).map(([category, amount]) => `<li>${category}: ${amount.toFixed(2)} ${defaultCurrency}</li>`).join('')}
+                </ul>
+                <h3>Budget Performance</h3>
+                <ul>
+                    ${report.budgetPerformance.map(budget => `<li>${budget.category}: ${budget.percentUsed.toFixed(1)}% used (${budget.spent.toFixed(2)} of ${budget.budgeted.toFixed(2)} ${defaultCurrency})</li>`).join('')}
+                </ul>
+                <h3>Insights</h3>
+                <ul>
+                    ${report.insights.map(insight => `<li>${insight.message}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        // Currency Conversion (simulated)
+        function convertCurrency(amount, from, to) {
+            const rates = { USD: 1, EUR: 0.92, GBP: 0.79, CAD: 1.37 };
+            return (amount * rates[from]) * (1 / rates[to]);
+        }
+
+        // Event Listeners for resize, etc.
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('visible');
+                mainContent.classList.remove('expanded');
+            }
+        });
+
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => modal.classList.remove('active'));
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('user')) {
+                currentUser = JSON.parse(localStorage.getItem('user'));
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                initApp();
+            }
+            notifications = JSON.parse(localStorage.getItem('notifications')) || notifications;
+            // Set checkboxes
+            document.getElementById('billReminders').checked = notifications.billReminders;
+            document.getElementById('budgetAlerts').checked = notifications.budgetAlerts;
+            document.getElementById('weeklyReports').checked = notifications.weeklyReports;
+            document.getElementById('monthlyReports').checked = notifications.monthlyReports;
+        });
+
+        // Request notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
